@@ -17,6 +17,9 @@ public class DependencyParserDriver {
     private int seedSizeSingle;
     private int selfTrainingSizeSingle;
     private boolean varySeedSize;
+    private String wsjSeedPath;
+    private String wsjTestPath;
+    private String brownCorpusBasePath;
     private boolean varySelfTrainingSize;
 
     private List<Integer> wsjSeedSetSizes;
@@ -34,8 +37,8 @@ public class DependencyParserDriver {
     }
 
     private void printUsage() {
-        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <seed_corpus - wsj/brown> <test_corpus - wsj/brown> <embedding_file_path> <single> <seed_set_size> [<self_training_size>]");
-        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <seed_corpus - wsj/brown> <test_corpus - wsj/brown> <embedding_file_path> <group> <vary_seed_size/vary_self_training_size>");
+        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_02_22.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <single> <seed_set_size> [<self_training_size>]");
+        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_02_22.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <batch> <vary_seed_size/vary_self_training_size>");
     }
 
     private void validateSeedTestCorpus(String corpus) {
@@ -45,8 +48,8 @@ public class DependencyParserDriver {
     }
 
     private void validateExperimentType(String type) {
-        if (!type.equalsIgnoreCase("single") && !type.equalsIgnoreCase("group")) {
-            System.out.println("Invalid experiment type " + type + " provided. Please provide single/group. ");
+        if (!type.equalsIgnoreCase("single") && !type.equalsIgnoreCase("batch")) {
+            System.out.println("Invalid experiment type " + type + " provided. Please provide single/batch. ");
         }
     }
 
@@ -66,7 +69,7 @@ public class DependencyParserDriver {
     }
 
     private void writeToFile(String fileName, StringBuilder stringBuilder) {
-        System.out.println(currentTime() + "Writing to file " + fileName + " . . .");
+        //System.out.println(currentTime() + "Writing to file " + fileName + " . . .");
         try {
             FileWriter fileWriter = new FileWriter(fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
@@ -78,6 +81,7 @@ public class DependencyParserDriver {
     }
 
     private void concatenateFiles(String source1, String source2, String destination) {
+        System.out.println(currentTime() + "Concatenating files " + source1 + " and " + source2 + " into file " + destination + " . . .");
         StringBuilder stringBuilder = new StringBuilder();
         readFromFile(source1, stringBuilder);
         readFromFile(source2, stringBuilder);
@@ -101,7 +105,9 @@ public class DependencyParserDriver {
                 }
                 modelPath = execDir + "/" + "model_" + seedSet + "_" + testSet + "_adapt";
                 testAnnotationsPath = execDir + "/" + "self_train_set_annotations" + seedSet + "_" + testSet + ".conllx";
-                annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath);
+                System.out.println(currentTime() + "LAS score single self training: seed_set: " + seedSet + " test_set: " + testSet
+                        + " seed_size: " + seedSizeSingle + "self_training_size: " + selfTrainingSizeSingle + " las_score: "
+                        + annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath));
 
                 // Combine train file and new self_train_set_annotations into a new train file
                 newTrainPath = execDir + "/" + "combined_" + seedSet + "_" + testSet + "_seed_size_" + seedSizeSingle + ".conllx";
@@ -109,7 +115,9 @@ public class DependencyParserDriver {
 
                 modelPath = execDir + "/" + "model_" + seedSet + "_" + testSet + "_adapt_combined";
                 testAnnotationsPath = execDir + "/" + "test_set_annotations" + seedSet + "_" + testSet + ".conllx";
-                annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath);
+                System.out.println(currentTime() + "LAS score single self_trained: seed_set: " + seedSet + " test_set: " + testSet
+                        + " seed_size: " + seedSizeSingle + "self_training_size: " + selfTrainingSizeSingle + " las_score: "
+                        + annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath));
             } else {
                 testPath = execDir + "/" + testSet + "_test.conllx";
                 if (seedSizeSingle == -1) {
@@ -119,7 +127,9 @@ public class DependencyParserDriver {
                 }
                 modelPath = execDir + "/" + "model_" + seedSet + "_" + testSet;
                 testAnnotationsPath = execDir + "/" + "test_set_annotations_" + seedSet + "_" + testSet + ".conllx";
-                annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath);
+                System.out.println(currentTime() + "LAS score single: seed_set: " + seedSet + " test_set: " + testSet
+                        + " seed_size: " + seedSizeSingle + " no self_training " + " las_score: "
+                        + annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath));
             }
         } else {
             if (varySeedSize) {
@@ -136,21 +146,27 @@ public class DependencyParserDriver {
                     testPath = execDir + "/" + seedSet + "_test.conllx";
                     modelPath = execDir + "/" + "model_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + seedSet;
                     testAnnotationsPath = execDir + "/" + "test_annotations_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + seedSet + ".conllx";
-                    annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score II: seed_set: " + seedSet + " test_set: " + seedSet
+                            + " seed_size: " + seedSize + " las_score: "
+                            + annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath));
 
                     // Train on seedSet and test on testSet
                     trainPath = execDir + "/" + seedSet + "_seed_self_training_" + String.valueOf(seedSize) + ".conllx";
                     testPath = execDir + "/" + testSet + "_test.conllx";
                     modelPath = execDir + "/" + "model_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet;
                     testAnnotationsPath = execDir + "/" + "test_annotations_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet + ".conllx";
-                    annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score IO: seed_set: " + seedSet + " test_set: " + testSet
+                            + " seed_size: " + seedSize + " las_score: "
+                            + annotateTestSet(trainPath, testPath, modelPath, testAnnotationsPath));
 
                     // Train on seedSet, adapt on testSet and test on testSet
                     trainPath = execDir + "/" + seedSet + "_seed_self_training_" + String.valueOf(seedSize) + ".conllx";
                     selfTrainingPath = execDir + "/" + testSet + "_training.conllx";
                     modelPath = execDir + "/" + "model_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet + "_" + "adapt";
                     testAnnotationsPath = execDir + "/" + "self_train_set_annotations_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet + ".conllx";
-                    annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score IO self_training: seed_set: " + seedSet + " test_set: "
+                            + testSet + " seed_size: " + seedSize + " las_score: "
+                            + annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath));
 
                     // Combine train file and new self_train_set_annotations into a new train file
                     newTrainPath = execDir + "/" + "combined_" + seedSet + "_" + testSet + "_seed_size_" + seedSize + ".conllx";
@@ -159,7 +175,9 @@ public class DependencyParserDriver {
                     testPath = execDir + "/" + testSet + "_test.conllx";
                     modelPath = execDir + "/" + "model_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet + "_adapt_combined";
                     testAnnotationsPath = execDir + "/" + "test_set_annotations_seed_size_" + String.valueOf(seedSize) + "_" + seedSet + "_" + testSet + ".conllx";
-                    annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score IO_self_trained: seed_set: " + seedSet + " test_set: "
+                            + testSet + " seed_size: " + seedSize + " las_score: "
+                            + annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath));
                 }
             } else {
                 List<Integer> incrementalSelfTrainingSizes;
@@ -176,7 +194,9 @@ public class DependencyParserDriver {
 
                     modelPath = execDir + "/" + "model_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + "_" + "adapt";
                     testAnnotationsPath = execDir + "/" + "self_train_set_annotations_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + ".conllx";
-                    annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score IO self training: seed_set: " + seedSet + " test_set: "
+                            + testSet + " self_training_size: " + selfTrainingSize + " las_score: "
+                            + annotateTestSet(trainPath, selfTrainingPath, modelPath, testAnnotationsPath));
 
                     // Combine train file and new self_train_set_annotations into a new train file
                     newTrainPath = execDir + "/" + "combined_" + seedSet + "_" + testSet + "_self_training_size_" + selfTrainingSize + ".conllx";
@@ -185,55 +205,66 @@ public class DependencyParserDriver {
                     testPath = execDir + "/" + testSet + "_test.conllx";
                     modelPath = execDir + "/" + "model_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + "_adapt_combined";
                     testAnnotationsPath = execDir + "/" + "test_set_annotations_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + ".conllx";
-                    annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath);
+                    System.out.println(currentTime() + "LAS score IO_self_trained: seed_set: " + seedSet + " test_set: "
+                            + testSet + " self_training_size: " + selfTrainingSize + " las_score: "
+                            + annotateTestSet(newTrainPath, testPath, modelPath, testAnnotationsPath));
                 }
             }
         }
     }
 
     private void parseCommandLineArgs(String[] args) {
-        if (args.length < 6) {
+        if (args.length < 9) {
             printUsage();
         }
         this.execDir = args[0];
-        this.seedSet = args[1];
-        this.testSet = args[2];
-        this.embeddingPath = args[3];
-        this.experimentType = args[4];
+        this.wsjSeedPath = args[1];
+        this.wsjTestPath = args[2];
+        this.brownCorpusBasePath = args[3];
+        this.seedSet = args[4];
+        this.testSet = args[5];
+        this.embeddingPath = args[6];
+        this.experimentType = args[7];
 
         validateSeedTestCorpus(this.seedSet);
         validateSeedTestCorpus(this.testSet);
         validateExperimentType(this.experimentType);
 
         if (experimentType.equalsIgnoreCase("single")) {
-            if (args[5].equalsIgnoreCase("full")) {
+            if (args[8].equalsIgnoreCase("full")) {
                 seedSizeSingle = -1;
             } else {
-                seedSizeSingle = Integer.parseInt(args[5]);
+                seedSizeSingle = Integer.parseInt(args[8]);
             }
-            if (args.length >= 7) {
-                if (args[6].equalsIgnoreCase("full")) {
+            if (args.length >= 10) {
+                if (args[9].equalsIgnoreCase("full")) {
                     selfTrainingSizeSingle = -1;
                 } else {
-                    selfTrainingSizeSingle = Integer.parseInt(args[6]);
+                    selfTrainingSizeSingle = Integer.parseInt(args[9]);
                 }
             } else {
                 selfTrainingSizeSingle = 0; // It means no adaptation and so retraining
             }
         } else {
-            if (args[5].equalsIgnoreCase("vary_seed_set_size")) {
+            if (args[8].equalsIgnoreCase("vary_seed_set_size")) {
                 this.varySeedSize = true;
                 this.varySelfTrainingSize = false;
-            } else if (args[5].equalsIgnoreCase("vary_self_training_size")) {
+            } else if (args[8].equalsIgnoreCase("vary_self_training_size")) {
                 this.varySeedSize = false;
                 this.varySelfTrainingSize = true;
             } else {
-                System.out.println("Invalid vary method for group " + args[5] + " given. Please provide vary_seed_set_size or vary_self_training_size. ");
+                System.out.println("Invalid vary method for batch " + args[8] + " given. Please provide vary_seed_set_size or vary_self_training_size. ");
             }
         }
     }
 
-    private void annotateTestSet(String trainPath, String testPath, String modelPath, String testAnnotationsPath) {
+    /*
+     Train and test the model over the given training and test set and returns the LAS score obtained.
+     */
+    private double annotateTestSet(String trainPath, String testPath, String modelPath, String testAnnotationsPath) {
+        System.out.println(currentTime() + "Annotating test set: Training over " + trainPath + ", testing on "
+                + testPath + " and storing annotations to " + testAnnotationsPath + " using " + modelPath
+                + " as the model directory");
         // Configuring propreties for the parser. A full list of properties can be found
         // here https://nlp.stanford.edu/software/nndep.shtml
         Properties prop = new Properties();
@@ -251,11 +282,13 @@ public class DependencyParserDriver {
         DependencyParser model = DependencyParser.loadFromModelFile(modelPath);
 
         // Test model on test data, write annotations to testAnnotationsPath
-        model.testCoNLL(testPath, testAnnotationsPath);
+        return model.testCoNLL(testPath, testAnnotationsPath);
     }
 
     public static void main(String[] args) {
         DependencyParserDriver driver = new DependencyParserDriver(args);
+        Preprocessor preprocessor = new Preprocessor(driver.wsjSeedPath, driver.wsjTestPath, driver.brownCorpusBasePath, driver.execDir);
+        preprocessor.preprocess();
         driver.process();
     }
 }

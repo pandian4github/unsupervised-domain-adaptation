@@ -275,6 +275,14 @@ public class Preprocessor {
         }
     }
 
+    public void preprocess() {
+        createWsjSeedFiles();
+        copyWsjTrainingTestFilesIntoExecutionDir();
+
+        createBrownTrainingTestSplit();
+        createBrownTrainingFiles();
+    }
+
     public static void main(String[] args) {
         String executionDirectory = args[0];
         String wsjSeedPath = args[1];
