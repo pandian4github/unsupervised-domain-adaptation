@@ -268,7 +268,7 @@ public class DependencyParserDriver {
         // Configuring propreties for the parser. A full list of properties can be found
         // here https://nlp.stanford.edu/software/nndep.shtml
         Properties prop = new Properties();
-        prop.setProperty("maxIter", "20");
+        prop.setProperty("maxIter", "1000");
 
         DependencyParser p = new DependencyParser(prop);
 
