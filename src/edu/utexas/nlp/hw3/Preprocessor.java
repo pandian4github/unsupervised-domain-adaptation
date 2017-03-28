@@ -82,11 +82,70 @@ public class Preprocessor {
         writeToFile(wsjTestFileName, testBuilder);
     }
 
+    private void readFromBrownGenre(String genre, int num_to_read, StringBuilder stringBuilder) {
+        boolean sentenceStarted = false;
+        try {
+            String line;
+            int count = 0;
+
+            String fileName = executionDirectory + "/" + "brown_training_" + genre + ".conllx";
+            FileReader fileReader = new FileReader(new File(fileName));
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.length() == 0) {
+                    if (sentenceStarted) {
+                        count++;
+                        if (count <= num_to_read) {
+                            stringBuilder.append(line).append("\n");
+                        } else {
+                            break;
+                        }
+                        sentenceStarted = false;
+                    }
+                } else {
+                    if (count <= num_to_read) {
+                        stringBuilder.append(line).append("\n");
+                    } else {
+                        break;
+                    }
+                    sentenceStarted = true;
+                }
+            }
+            if (sentenceStarted) {
+                count++;
+                if (count <= num_to_read) {
+                    stringBuilder.append("\n");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /*
      Create separate files with 1000, 2000, 3000 etc number of sentences from the brown self-training set
      */
     private void createBrownTrainingFiles() {
-        createIncrementalSeedFiles(this.executionDirectory + "/" + "brown_training.conllx", brownSelfTrainingSizes, "brown_seed_self_training_");
+//        createIncrementalSeedFiles(this.executionDirectory + "/" + "brown_training.conllx", brownSelfTrainingSizes, "brown_seed_self_training_");
+        int no_genres = 8;
+        int totalTrainingCount = 0;
+        for (String genre: brown90PercentCounts.keySet()) {
+            totalTrainingCount += brown90PercentCounts.get(genre);
+        }
+        for (Integer brownSelfTrainingSize : brownSelfTrainingSizes) {
+            int trainingSize = brownSelfTrainingSize;
+
+            StringBuilder stringBuilder = new StringBuilder();
+            File baseDir = new File(brownCorpusBasePath);
+            for (File genreDir : baseDir.listFiles()) {
+                int trainingCount = brown90PercentCounts.get(genreDir.getName());
+                int individual_size = (int) Math.round((double) trainingCount * (double) trainingSize / (double) totalTrainingCount);
+                readFromBrownGenre(genreDir.getName(), individual_size, stringBuilder);
+            }
+            String fileName = executionDirectory + "/" + "brown_seed_self_training_" + String.valueOf(trainingSize) + ".conllx";
+            writeToFile(fileName, stringBuilder);
+        }
     }
 
     /*
@@ -208,6 +267,7 @@ public class Preprocessor {
 
         File baseDir = new File(brownCorpusBasePath);
         for (File genreDir: baseDir.listFiles()) {
+            StringBuilder genreStringBuilder = new StringBuilder();
             int count = 0;
             String name = genreDir.getName();
             int trainingCount = brown90PercentCounts.get(name);
@@ -227,6 +287,7 @@ public class Preprocessor {
                                 count++;
                                 if (count <= trainingCount) {
                                     brownTrainingBuilder.append(line).append("\n");
+                                    genreStringBuilder.append(line).append("\n");
                                 } else {
                                     brownTestBuilder.append(line).append("\n");
                                 }
@@ -235,6 +296,7 @@ public class Preprocessor {
                         } else {
                             if (count <= trainingCount) {
                                 brownTrainingBuilder.append(line).append("\n");
+                                genreStringBuilder.append(line).append("\n");
                             } else {
                                 brownTestBuilder.append(line).append("\n");
                             }
@@ -245,6 +307,7 @@ public class Preprocessor {
                         count++;
                         if (count <= trainingCount) {
                             brownTrainingBuilder.append("\n");
+                            genreStringBuilder.append("\n");
                         } else {
                             brownTestBuilder.append("\n");
                         }
@@ -253,6 +316,10 @@ public class Preprocessor {
                     e.printStackTrace();
                 }
             }
+
+            String genreFileName = executionDirectory + "/" + "brown_training_" + name + ".conllx";
+            writeToFile(genreFileName, genreStringBuilder);
+            genreStringBuilder.setLength(0);
         }
 
         String brownTrainingFileName = this.executionDirectory + "/" + "brown_training.conllx";
