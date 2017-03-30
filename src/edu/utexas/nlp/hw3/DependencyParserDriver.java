@@ -190,7 +190,7 @@ public class DependencyParserDriver {
                 for (int selfTrainingSize: incrementalSelfTrainingSizes) {
                     // Train on seedSet, adapt on testSet and test on testSet
                     trainPath = execDir + "/" + seedSet + "_seed_self_training_" + String.valueOf(seedSize) + ".conllx";
-                    selfTrainingPath = execDir + "/" + testSet + "_seed_self_training_" + String.valueOf(selfTrainingSizeSingle) + ".conllx";
+                    selfTrainingPath = execDir + "/" + testSet + "_seed_self_training_" + String.valueOf(selfTrainingSize) + ".conllx";
 
                     modelPath = execDir + "/" + "model_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + "_" + "adapt";
                     testAnnotationsPath = execDir + "/" + "self_train_set_annotations_self_training_size_" + String.valueOf(selfTrainingSize) + "_" + seedSet + "_" + testSet + ".conllx";
