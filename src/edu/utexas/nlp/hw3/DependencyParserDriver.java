@@ -37,8 +37,8 @@ public class DependencyParserDriver {
     }
 
     private void printUsage() {
-        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_02_22.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <single> <seed_set_size> [<self_training_size>]");
-        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_02_22.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <batch> <vary_seed_size/vary_self_training_size>");
+        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_training.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <single> <seed_set_size> [<self_training_size>]");
+        System.out.println("java edu.utexas.nlp.hw3.DependencyParserDriver <execution_dir> <path_to_wsj_training.conllx> <path_to_wsj_23.conllx> <path_to_brown_corpus_base_path> <seed_corpus_name> <test_corpus_name> <embedding_file_path> <batch> <vary_seed_size/vary_self_training_size>");
     }
 
     private void validateSeedTestCorpus(String corpus) {
@@ -184,9 +184,9 @@ public class DependencyParserDriver {
             } else {
                 List<Integer> incrementalSelfTrainingSizes;
                 if (seedSet.equalsIgnoreCase("wsj")) {
-                    incrementalSelfTrainingSizes = wsjSeedSetSizes;
-                } else {
                     incrementalSelfTrainingSizes = brownSelfTrainingSizes;
+                } else {
+                    incrementalSelfTrainingSizes = wsjSeedSetSizes;
                 }
                 int seedSize = 10000;
                 for (int selfTrainingSize: incrementalSelfTrainingSizes) {
